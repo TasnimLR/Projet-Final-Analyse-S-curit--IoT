@@ -35,6 +35,8 @@ root  23502  0.0  1.6  367372  64256  pts/2  Sl  09:25  0:01
       /home/user/openplc_lab/OpenPLC_v3/.venv/bin/python3 webserver.py
 ```
 
+![Processus OpenPLC actif](captures/01_processus_openplc.png)
+
 Le processus `webserver.py` est actif — OpenPLC tourne bien sur la machine.
 
 ---
@@ -71,6 +73,8 @@ Nmap done: 1 IP address (1 host up) scanned in 92.35 seconds
 - Le port **8080** expose l'interface web Flask de gestion du PLC.
 - Le banner révèle `Werkzeug/2.3.7 Python/3.12.3` — information de fingerprinting exploitable.
 - Les ports ICS (502, 44818) sont fermés ici. En production, leur exposition activerait CVE-2024-34026 (CVSS 9.0).
+
+![Scan nmap](captures/02_scan_nmap.png)
 
 ---
 
@@ -117,6 +121,8 @@ Connection: close
 | `X-Content-Type-Options` | MIME sniffing |
 | `Strict-Transport-Security` | Downgrade HTTP |
 
+![Headers HTTP manquants](captures/03_headers_http.png)
+
 ---
 
 ## 5. Test des Credentials par Défaut
@@ -156,6 +162,8 @@ Connection: close
 
 **Authentification réussie.** La redirection vers `/dashboard` confirme que les credentials `openplc / openplc` fonctionnent.
 
+![Login credentials par défaut](captures/04_login_credentials_defaut.png)
+
 ---
 
 ## 6. Scan de Vulnérabilités Web — Nikto
@@ -190,6 +198,8 @@ user@ubuntu:~$ nikto -h http://localhost:8080 -nossl
 - Cookie de session créé **sans le flag `HttpOnly`** → vol de session possible via XSS
 - Header `X-Frame-Options` absent → Clickjacking confirmé
 
+![Scan Nikto](captures/05_scan_nikto.png)
+
 ---
 
 ## 7. Énumération des Endpoints Post-Authentification
@@ -211,6 +221,8 @@ Email       : openplc@openplc.com
 ```
 
 Liste complète des comptes accessible sans contrôle de rôle supplémentaire.
+
+![Endpoint /users](captures/08_endpoint_users.png)
 
 ### 7.2 `/settings` — Configuration interne
 
@@ -268,6 +280,10 @@ user@ubuntu:~$ sqlite3 openplc.db "SELECT * FROM Users;"
 ```
 
 **CRITIQUE : le mot de passe `openplc` est stocké en clair (plaintext).** Aucun hashage (bcrypt, sha256, argon2), aucun salage. En cas d'accès à la base de données, tous les mots de passe sont immédiatement lisibles.
+
+![SQLite Users — mot de passe en clair](captures/06_sqlite_users.png)
+
+![SQLite Settings](captures/07_sqlite_settings.png)
 
 **Table Settings :**
 ```
